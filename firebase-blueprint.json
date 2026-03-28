@@ -1,0 +1,28 @@
+{
+  "entities": {
+    "Post": {
+      "title": "Post",
+      "description": "A photo blog post",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "description": "Post title" },
+        "description": { "type": "string", "description": "Post content" },
+        "layout": { "type": "string", "description": "Layout type" },
+        "filter": { "type": "string", "description": "Image filter" },
+        "images": { "type": "array", "items": { "type": "string" }, "description": "List of image URLs" },
+        "tags": { "type": "array", "items": { "type": "string" }, "description": "List of tags" },
+        "location": { "type": "string", "description": "Location string" },
+        "authorId": { "type": "string", "description": "UID of the author" },
+        "authorName": { "type": "string", "description": "Display name of the author" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" }
+      },
+      "required": ["title", "layout", "images", "authorId", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/posts/{postId}": {
+      "schema": "Post",
+      "description": "Collection of blog posts"
+    }
+  }
+}

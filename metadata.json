@@ -1,0 +1,5 @@
+{
+  "name": "프레임일기 (Frame Diary)",
+  "description": "사진 중심의 감성 포토 다이어리 블로그. 5가지 레이아웃으로 일상을 아름답게 기록하세요.",
+  "requestFramePermissions": ["camera", "geolocation"]
+}

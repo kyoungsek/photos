@@ -1,0 +1,79 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: posts
+    // Document ID: auto-generated
+    // Fields:
+    //   - title: string (required, 1-100 chars)
+    //   - description: string (optional, 0-1000 chars)
+    //   - layout: string (required, enum)
+    //   - filter: string (optional, enum)
+    //   - images: list (required, 1-20 items, each string < 1000 chars)
+    //   - tags: list (optional, 0-20 items, each string < 50 chars)
+    //   - location: string (optional, 0-100 chars)
+    //   - authorId: string (required, matches auth.uid)
+    //   - authorName: string (required, < 100 chars)
+    //   - createdAt: timestamp (required, server-side)
+    //
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "ghkdeld1211@gmail.com" && request.auth.token.email_verified == true)); // Default admin
+    }
+
+    function isValidPost(data) {
+      let validLayouts = ['1:1 균형형', '메인 강조형', '자유형', '스토리형', '분할형'];
+      let validFilters = ['none', 'Vintage', 'Black and White', 'Sepia'];
+      
+      return data.keys().hasAll(['title', 'layout', 'images', 'authorId', 'authorName', 'createdAt']) &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 100 &&
+             data.layout in validLayouts &&
+             (!('filter' in data) || data.filter in validFilters) &&
+             data.images is list && data.images.size() > 0 && data.images.size() <= 20 &&
+             data.authorId == request.auth.uid &&
+             data.authorName is string && data.authorName.size() <= 100 &&
+             data.createdAt == request.time;
+    }
+
+    function isValidUpdate(data, currentData) {
+      let validLayouts = ['1:1 균형형', '메인 강조형', '자유형', '스토리형', '분할형'];
+      let validFilters = ['none', 'Vintage', 'Black and White', 'Sepia'];
+      
+      return data.keys().hasAll(['title', 'layout', 'images', 'authorId', 'authorName', 'createdAt']) &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 100 &&
+             data.layout in validLayouts &&
+             (!('filter' in data) || data.filter in validFilters) &&
+             data.images is list && data.images.size() > 0 && data.images.size() <= 20 &&
+             data.authorId == currentData.authorId && // authorId must not change
+             data.createdAt == currentData.createdAt; // createdAt must not change
+    }
+
+    match /posts/{postId} {
+      allow read: if true; // Publicly readable
+      allow create: if isAuthenticated() && isValidPost(request.resource.data);
+      allow update: if isAuthenticated() && (isOwner(resource.data.authorId) || isAdmin()) && isValidUpdate(request.resource.data, resource.data);
+      allow delete: if isAuthenticated() && (isOwner(resource.data.authorId) || isAdmin());
+    }
+
+    match /test/connection {
+      allow read: if true;
+    }
+  }
+}
